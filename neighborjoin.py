@@ -41,6 +41,8 @@ def neighbor_joining(otu_count, codes, dist_mat):
         clusters = list(clusters_dict.keys())
 
         print_updated_dist_mat(clusters_dict, clusters)
+
+        # decrement number of clusters
         otu_count -= 1
 
     print("Distance btwn remaining clusters:")
@@ -50,14 +52,15 @@ def neighbor_joining(otu_count, codes, dist_mat):
 
 def print_updated_dist_mat(clusters_dict, clusters):
     print("Updated Distance Matrix:")
-    # Print the cluster names at the top of the matrix
+    # print the cluster names at the top of the matrix
     print("\t" + "\t".join(clusters))
+
+    # print distance matrix values
     for i in range(len(clusters)):
-        # Print the cluster name at the side of the matrix
         print(clusters[i], end="\t")
         for j in range(len(clusters)):
             if clusters[i] in clusters_dict and clusters[j] in clusters_dict[clusters[i]]:
-                print(f"{clusters_dict[clusters[i]][clusters[j]]:.2f}", end="\t")
+                print(f"{clusters_dict[clusters[i]][clusters[j]]}", end="\t")
             else:
                 print("0", end="\t")
         print()
