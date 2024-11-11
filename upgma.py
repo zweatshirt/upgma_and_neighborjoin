@@ -1,11 +1,10 @@
-from helpers import rm_clusters, user_prompt
+from helpers import rm_clusters, merge_clusters, user_prompt
 
-
-
+# Read data from input file
 def read_data():
     orig_dict = {} 
     clusters_dict = {}
-    newick_format = {} 
+    newick_f_dict = {} 
     codes_dict = {}
     while True:
         user_in = input(user_prompt)
@@ -25,12 +24,11 @@ def read_data():
                 dist_mat = []
                 for i in range(otu_count):
                     codes_dict[codes[i]] = i
-                    newick_format[codes[i]] = codes[i]
+                    newick_f_dict[codes[i]] = codes[i]
                     clusters_dict[codes[i]] = {0: codes[i]}
                     dist_mat.append(list(map(float, file.readline().strip().split())))
                 print("\n", " ".join(codes))
     
-
             for i in range(otu_count):
                 print(f"{codes[i]} ", end="")
                 for j in range(otu_count):
@@ -40,7 +38,7 @@ def read_data():
             print()
 
             # bad code
-            return otu_count, codes, orig_dict, clusters_dict, newick_format
+            return otu_count, codes, orig_dict, clusters_dict, newick_f_dict
 
         except FileNotFoundError:
             print(f"Error opening input file with name {user_in}, try again.")
@@ -51,7 +49,7 @@ def read_data():
 
 
 # UPGMA algorithm implementation
-def upgma(orig_dict, clusters_dict, newick_format, otu_count):
+def upgma(orig_dict, clusters_dict, newick_f_dict, otu_count):
     max_dist = float('inf')
     num_clusters = otu_count
     while num_clusters > 1:
@@ -71,8 +69,7 @@ def upgma(orig_dict, clusters_dict, newick_format, otu_count):
      
                 print(f"Cluster {i}: {clusters[i]} Cluster {j}: {clusters[j]}")
                 temp_dist = 0
-                # determine distance between clusters as the unweighted average of all distances.
-                
+                # determine distance between clusters as the average of all distances.
                 for k in range(len(clusters[i])):
                     # print(len(clusters[j]))
                     # print(clusters[j])
@@ -83,26 +80,23 @@ def upgma(orig_dict, clusters_dict, newick_format, otu_count):
                     min = temp_dist
                     min_i = i
                     min_j = j
-
-        # merge min_i and min_j into clusters and add to hash tables
-        cluster_i = clusters[min_i]
-        cluster_j = clusters[min_j]
-        merge = cluster_i + cluster_j
-
+                    
+        # merge min_i and min_j into clusters
+        cluster_i, cluster_j, merge = merge_clusters(min_i, min_j, clusters)
 
         merge_cluster_values(clusters_dict, min, cluster_i, cluster_j, merge)
             
-        newick_format[merge] = f"({newick_format[cluster_i]}, {newick_format[cluster_j]})"
-        # print('The Newick Format dict is: ', newick_format)
+        newick_f_dict[merge] = f"({newick_f_dict[cluster_i]}, {newick_f_dict[cluster_j]})"
+        # print('The Newick Format dict is: ', newick_f_dict)
 
-        # eliminate old clusters, decrement num_clusters
-        rm_clusters(clusters_dict, newick_format, cluster_i, cluster_j)
+        # remove old clusters, decrement num_clusters
+        rm_clusters(clusters_dict, newick_f_dict, cluster_i, cluster_j)
         num_clusters -= 1
 
     clusters = list(clusters_dict.keys()) 
     # print(clusters)
     # print(clusters[0])
-    print("Newick Format: ", newick_format[clusters[0]])
+    print("Newick Format: ", newick_f_dict[clusters[0]])
 
 
 def merge_cluster_values(clusters_dict, min, cluster_i, cluster_j, merge):
@@ -119,5 +113,5 @@ def merge_cluster_values(clusters_dict, min, cluster_i, cluster_j, merge):
 
 
 # Main
-otu_count, codes, orig_dict, clusters_dict, newick_format = read_data()
-upgma(orig_dict, clusters_dict, newick_format, otu_count)
+otu_count, codes, orig_dict, clusters_dict, newick_f_dict = read_data()
+upgma(orig_dict, clusters_dict, newick_f_dict, otu_count)

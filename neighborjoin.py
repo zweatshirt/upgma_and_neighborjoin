@@ -1,4 +1,4 @@
-from helpers import rm_clusters, user_prompt
+from helpers import rm_clusters, merge_clusters, user_prompt
 
 def read_data():
     while True:
@@ -41,51 +41,21 @@ def neighbor_joining(otu_count, codes, dist_mat):
     num_clusters = otu_count  # initializing the number of clusters
 
     while num_clusters > 2:
-        # Step 1: Calculate r values
-        clusters = list(clusters_dict.keys())
-        array_r_values = []
 
-        for i in range(num_clusters):
-            temp = 0
-            for j in range(num_clusters):
-                temp += clusters_dict[clusters[i]].get(clusters[j], 0)
-            array_r_values.append(temp / (num_clusters - 2))  # with divide by 2 modification due to double counting
+        # calculate r values
+        clusters, r_values = calculate_r_values(clusters_dict, num_clusters)
 
-        # print("R Values")
-        # for i in range(num_clusters):
-        #     print(f"{clusters[i]} {array_r_values[i]}")
+        # calculate transformed distances (TD)
+        min_i, min_j = calculate_transformed_distances(clusters_dict, max_dist, num_clusters, clusters, r_values)
 
-        # Step 2: Calculate transformed distances (TD)
-        min = max_dist
-        min_i = 0
-        min_j = 0
+        # merge the clusters with the min transformed distance
+        cluster_i, cluster_j, merge = merge_clusters(min_i, min_j, clusters)
 
-        print("Transformed Distances Matrix:")
-        for i in range(num_clusters - 1):
-            for j in range(i + 1, num_clusters):
-                temp_td = clusters_dict[clusters[i]][clusters[j]] - array_r_values[i] - array_r_values[j]
-                print(f"TransformedDist({clusters[i]},{clusters[j]}) = {temp_td}", end=", ")
+        # calculate branch lengths
+        branch_1 = (clusters_dict[cluster_j][cluster_i] + r_values[min_i] - r_values[min_j]) / 2
+        branch_2 = (clusters_dict[cluster_j][cluster_i] + r_values[min_j] - r_values[min_i]) / 2
 
-                if temp_td < min:
-                    min = temp_td
-                    min_i = i
-                    min_j = j
-
-            print()
-
-        # Step 3: Merge the clusters with the min transformed distance
-        cluster_i = clusters[min_i]
-        cluster_j = clusters[min_j]
-        merge = cluster_i + cluster_j
-
-        # Calculate branch lengths
-        branch_1 = (clusters_dict[cluster_j][cluster_i] + array_r_values[min_i] - array_r_values[min_j]) / 2
-        branch_2 = (clusters_dict[cluster_j][cluster_i] + array_r_values[min_j] - array_r_values[min_i]) / 2
-
-
-        print(f"\nMerge {cluster_i}, {cluster_j}")
-        print(f"Distance btwn {cluster_i} and ancestral node {branch_1}")
-        print(f"Distance btwn {cluster_j} and ancestral node {branch_2}")
+        display_merge_info(cluster_i, cluster_j, branch_1, branch_2)
 
         # Initialize the merged cluster in clusters_dict
         clusters_dict[merge] = {}
@@ -113,12 +83,62 @@ def neighbor_joining(otu_count, codes, dist_mat):
     print(clusters_dict[clusters[0]][clusters[1]], clusters_dict[clusters[1]][clusters[0]])
 
     clusters= list(clusters_dict.keys())
- 
+
+    print_newick_format(newick_format, num_clusters, clusters)
+
+
+def print_newick_format(newick_format, num_clusters, clusters):
     # maybe the worst code I have ever written
     print("\nNewick Format: (", end="")
     for j in range(num_clusters):
         print(f"{newick_format[clusters[j]]}", sep=" ", end="")
     print(')')
+
+
+def display_merge_info(cluster_i, cluster_j, branch_1, branch_2):
+    print(f"\nMerge {cluster_i}, {cluster_j}")
+    print(f"Distance btwn {cluster_i} and ancestral node {branch_1}")
+    print(f"Distance btwn {cluster_j} and ancestral node {branch_2}")
+
+
+def calculate_transformed_distances(clusters_dict, max_dist, num_clusters, clusters, r_values):
+    min = max_dist
+    min_i = 0
+    min_j = 0
+
+    transformed_distances = {}
+    print("Transformed Distances Matrix:")
+    for i in range(num_clusters - 1):
+        for j in range(i + 1, num_clusters):
+            if (i, j) not in transformed_distances:
+                # calculate transformed distance
+                transformed_distances[(i, j)] = clusters_dict[clusters[i]][clusters[j]] - r_values[i] - r_values[j]
+            temp_td = transformed_distances[(i, j)]
+            print(f"TransformedDist({clusters[i]}, {clusters[j]}) = {temp_td}", end=", ")
+
+            if temp_td < min:
+                min = temp_td
+                min_i = i
+                min_j = j
+
+        print()
+    return min_i, min_j
+
+def calculate_r_values(clusters_dict, num_clusters):
+    clusters = list(clusters_dict.keys())
+    r_values = []
+
+    for i in range(num_clusters):
+        temp = 0
+        for j in range(num_clusters):
+            temp += clusters_dict[clusters[i]].get(clusters[j], 0)
+        r_values.append(temp / (num_clusters - 2))
+
+    print("R Values")
+    for i in range(num_clusters):
+        print(f"{clusters[i]} {r_values[i]}")
+
+    return clusters,r_values
 
 otu_count, codes, dist_mat = read_data()
 
