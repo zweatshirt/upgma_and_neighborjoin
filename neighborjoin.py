@@ -1,52 +1,19 @@
-from helpers import rm_clusters, merge_clusters, user_prompt
-
-def read_data():
-    while True:
-        try:# Get input file
-            user_in = input(user_prompt)
-            with open(user_in, 'r') as file:
-                otu_count = int(file.readline().strip())
-
-                # codes are on second line
-                # a code is simply the name of an individiual
-                codes = [code[0] for code in file.readline().strip().split()]
-
-                # read in actual distance matrix from input file
-                dist_mat = []
-                for line in file:
-                    dist_mat.append(list(map(float, line.strip().split())))
-                
-            return otu_count, codes, dist_mat
-        except FileNotFoundError:
-            print(f"Error opening input file with name {user_in}")
-            continue
-        except Exception as e:
-            print(f"Failure reading data from file: {e}")
-            exit(1)
+from helpers import read_data, rm_clusters, merge_clusters
 
 
 def neighbor_joining(otu_count, codes, dist_mat):
-    clusters_dict = {}
-    for j, code in enumerate(codes):
-        clusters_dict[code] = {}
-        for i in range(otu_count):
-            clusters_dict[code][codes[i]] = dist_mat[j][i]
+    clusters_dict = init_clusters_dict(otu_count, codes, dist_mat)
+    newick_f_dict = init_newick_f(codes) 
+    max_dist = float('inf') # float('inf') enables a theoretical infinite upper bound
 
-    # Initialize the Newick format dictionary with each code as its own cluster
-    newick_format = {}
-    for code in codes:
-        newick_format[code] = code
-
-    max_dist = float('inf')
-    num_clusters = otu_count  # initializing the number of clusters
-
-    while num_clusters > 2:
-
+    # otu_count is equivalent to the number of clusters to iterate over
+    # corresponding to each individual
+    while otu_count > 2:
         # calculate r values
-        clusters, r_values = calculate_r_values(clusters_dict, num_clusters)
+        clusters, r_values = calculate_r_values(clusters_dict, otu_count)
 
-        # calculate transformed distances (TD)
-        min_i, min_j = calculate_transformed_distances(clusters_dict, max_dist, num_clusters, clusters, r_values)
+        # transformed distances calculation
+        min_i, min_j = calculate_transformed_distances(clusters_dict, max_dist, otu_count, clusters, r_values)
 
         # merge the clusters with the min transformed distance
         cluster_i, cluster_j, merge = merge_clusters(min_i, min_j, clusters)
@@ -57,11 +24,10 @@ def neighbor_joining(otu_count, codes, dist_mat):
 
         display_merge_info(cluster_i, cluster_j, branch_1, branch_2)
 
-        # Initialize the merged cluster in clusters_dict
         clusters_dict[merge] = {}
         
         # Update clusters_dict with new distances
-        for i in range(num_clusters):
+        for i in range(otu_count):
             if clusters[i] != cluster_i and clusters[i] != cluster_j:
                 d1 = clusters_dict[clusters[i]][cluster_i]
                 d2 = clusters_dict[clusters[i]][cluster_j]
@@ -69,47 +35,62 @@ def neighbor_joining(otu_count, codes, dist_mat):
                 clusters_dict[clusters[i]][merge] = clusters_dict[merge][clusters[i]]
 
         # Update Newick format for the merged cluster
-        newick_format[merge] = f"({newick_format[cluster_i]}, {newick_format[cluster_j]})"
+        newick_f_dict[merge] = f"({newick_f_dict[cluster_i]}, {newick_f_dict[cluster_j]})"
 
-        # Remove the merged clusters from clusters_dict and newick_format
-        rm_clusters(clusters_dict, newick_format, cluster_i, cluster_j)
+        # Remove the merged clusters from clusters_dict and newick_f_dict
+        rm_clusters(clusters_dict, newick_f_dict, cluster_i, cluster_j)
 
         # Update list of clusters
         clusters = list(clusters_dict.keys())
-        num_clusters -= 1
+        otu_count -= 1
 
-    # Final results
     print("Distance btwn remaining clusters:")
     print(clusters_dict[clusters[0]][clusters[1]], clusters_dict[clusters[1]][clusters[0]])
-
     clusters= list(clusters_dict.keys())
+    print_newick_f_dict(newick_f_dict, otu_count, clusters)
 
-    print_newick_format(newick_format, num_clusters, clusters)
+
+def init_newick_f(codes):
+    newick_f_dict = {}
+    for code in codes:
+        newick_f_dict[code] = code
+    return newick_f_dict
 
 
-def print_newick_format(newick_format, num_clusters, clusters):
+def init_clusters_dict(otu_count, codes, dist_mat):
+    clusters_dict = {}
+    for j, code in enumerate(codes):
+        # codes are used as keys
+        clusters_dict[code] = {}
+        for i in range(otu_count):
+            clusters_dict[code][codes[i]] = dist_mat[j][i]
+    return clusters_dict
+
+
+def print_newick_f_dict(newick_f_dict, otu_count, clusters):
     # maybe the worst code I have ever written
     print("\nNewick Format: (", end="")
-    for j in range(num_clusters):
-        print(f"{newick_format[clusters[j]]}", sep=" ", end="")
+    for j in range(otu_count):
+        print(f"{newick_f_dict[clusters[j]]}", sep=" ", end="")
     print(')')
 
 
+# prints out which clusters to merge and the distances
 def display_merge_info(cluster_i, cluster_j, branch_1, branch_2):
     print(f"\nMerge {cluster_i}, {cluster_j}")
     print(f"Distance btwn {cluster_i} and ancestral node {branch_1}")
     print(f"Distance btwn {cluster_j} and ancestral node {branch_2}")
 
 
-def calculate_transformed_distances(clusters_dict, max_dist, num_clusters, clusters, r_values):
+def calculate_transformed_distances(clusters_dict, max_dist, otu_count, clusters, r_values):
     min = max_dist
     min_i = 0
     min_j = 0
 
     transformed_distances = {}
-    print("Transformed Distances Matrix:")
-    for i in range(num_clusters - 1):
-        for j in range(i + 1, num_clusters):
+    print("Transformed Distances:")
+    for i in range(otu_count - 1):
+        for j in range(i + 1, otu_count):
             if (i, j) not in transformed_distances:
                 # calculate transformed distance
                 transformed_distances[(i, j)] = clusters_dict[clusters[i]][clusters[j]] - r_values[i] - r_values[j]
@@ -124,28 +105,25 @@ def calculate_transformed_distances(clusters_dict, max_dist, num_clusters, clust
         print()
     return min_i, min_j
 
-def calculate_r_values(clusters_dict, num_clusters):
+
+def calculate_r_values(clusters_dict, otu_count):
     clusters = list(clusters_dict.keys())
     r_values = []
 
-    for i in range(num_clusters):
+    for i in range(otu_count):
         temp = 0
-        for j in range(num_clusters):
+        for j in range(otu_count):
             temp += clusters_dict[clusters[i]].get(clusters[j], 0)
-        r_values.append(temp / (num_clusters - 2))
+        r_values.append(temp / (otu_count - 2))
 
-    print("R Values")
-    for i in range(num_clusters):
+    print("\nR Values:")
+    for i in range(otu_count):
         print(f"{clusters[i]} {r_values[i]}")
-
+    print()
     return clusters,r_values
 
-otu_count, codes, dist_mat = read_data()
+otu_count, codes, dist_mat = read_data("neighborjoin")
 
-# Print distance matrix
-print("\n    ", " ".join(codes))
-for i in range(otu_count):
-    print(f"{codes[i]} ", " ".join(map(str, dist_mat[i])))
 
 # Run neighbor-joining algorithm
 neighbor_joining(otu_count, codes, dist_mat)
