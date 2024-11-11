@@ -15,4 +15,4 @@
 
 ### The way to execute both programs is virtually identical.
 
-If you need to execute on the home server, these commands will perfectly fine as long as you have Python downloaded.
+If you need to execute on the home server, these commands will work perfectly fine as long as you have Python downloaded.
