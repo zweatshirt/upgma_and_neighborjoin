@@ -1,5 +1,23 @@
 # Zachery Linscott's CS476 Project 2
 
+## Project input files:
+
+Location:
+- The project input files are in the project's top level directory.
+
+Names:
+- `DM-p127.txt`, `DM-p139.txt`, and `Mammal-DM.txt` (which is from the quiz-test).
+
+## Project executable scripts:
+
+Location: 
+- The executables are in the top level of the project directory.
+
+Names:
+- `upgma.py` and `neighborjoin.py`
+
+**Don't** run `helpers.py` (pls)
+
 ## How to run the UPGMA algorithm:
 
 1. In a shell of your choice (e.g. Bash, Zsh, Powershell), run: `python upgma.py` or `python3 upgma.py`, depending on your version of python.
