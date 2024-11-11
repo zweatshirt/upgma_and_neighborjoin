@@ -71,7 +71,10 @@ def print_newick_f_dict(newick_f_dict, otu_count, clusters):
     # maybe the worst code I have ever written
     print("\nNewick Format: (", end="")
     for j in range(otu_count):
-        print(f"{newick_f_dict[clusters[j]]}", sep=" ", end="")
+        if j < otu_count - 1:
+            print(f"{newick_f_dict[clusters[j]]}", sep="", end=", ")
+        else:
+            print(f"{newick_f_dict[clusters[j]]}", sep="", end="")
     print(')')
 
 
