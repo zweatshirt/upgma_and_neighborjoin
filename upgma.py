@@ -66,6 +66,6 @@ def merge_cluster_values(clusters_dict, min, cluster_i, cluster_j, merge):
         i += 1
 
 
-# Main
+# entry point
 otu_count, codes, orig_dict, clusters_dict, newick_f_dict = read_data("upgma")
 upgma(orig_dict, clusters_dict, newick_f_dict, otu_count)

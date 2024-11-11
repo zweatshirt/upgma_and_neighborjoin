@@ -26,7 +26,7 @@ def neighbor_joining(otu_count, codes, dist_mat):
 
         clusters_dict[merge] = {}
         
-        # Update clusters_dict with new distances
+        # update clusters_dict with new distances
         for i in range(otu_count):
             if clusters[i] != cluster_i and clusters[i] != cluster_j:
                 d1 = clusters_dict[clusters[i]][cluster_i]
@@ -34,14 +34,15 @@ def neighbor_joining(otu_count, codes, dist_mat):
                 clusters_dict[merge][clusters[i]] = (d1 + d2 - clusters_dict[cluster_i][cluster_j]) / 2
                 clusters_dict[clusters[i]][merge] = clusters_dict[merge][clusters[i]]
 
-        # Update Newick format for the merged cluster
+        # update Newick format for the merged cluster
         newick_f_dict[merge] = f"({newick_f_dict[cluster_i]}, {newick_f_dict[cluster_j]})"
 
-        # Remove the merged clusters from clusters_dict and newick_f_dict
+        # remove the merged clusters from clusters_dict and newick_f_dict
         rm_clusters(clusters_dict, newick_f_dict, cluster_i, cluster_j)
 
-        # Update list of clusters
+        # update the list of clusters
         clusters = list(clusters_dict.keys())
+        # decrement num of clusters
         otu_count -= 1
 
     print("Distance btwn remaining clusters:")
@@ -125,8 +126,7 @@ def calculate_r_values(clusters_dict, otu_count):
     print()
     return clusters,r_values
 
+
+# entry point
 otu_count, codes, dist_mat = read_data("neighborjoin")
-
-
-# Run neighbor-joining algorithm
 neighbor_joining(otu_count, codes, dist_mat)
