@@ -16,7 +16,7 @@ Location:
 Names:
 - `upgma.py` and `neighborjoin.py`
 
-**Don't** run `helpers.py` (pls)
+**Don't** run `helpers.py` - it just contains helper functions
 
 ## How to run the UPGMA algorithm:
 
