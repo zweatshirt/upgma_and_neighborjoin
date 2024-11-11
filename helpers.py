@@ -91,9 +91,7 @@ def read_nj_data():
                 for line in file:
                     dist_mat.append(list(map(float, line.strip().split())))
             # Print distance matrix
-            print("\n    ", " ".join(codes))
-            for i in range(otu_count):
-                print(f"{codes[i]} ", " ".join(map(str, dist_mat[i])))
+            print_distance_matrix(otu_count, codes, dist_mat)
                 
             return otu_count, codes, dist_mat
         except FileNotFoundError:
@@ -102,4 +100,10 @@ def read_nj_data():
         except Exception as e:
             print(f"Failure reading data from file: {e}")
             exit(1)
+
+
+def print_distance_matrix(otu_count, codes, dist_mat):
+    print("\n    ", " ".join(codes))
+    for i in range(otu_count):
+        print(f"{codes[i]} ", " ".join(map(str, dist_mat[i])))
 

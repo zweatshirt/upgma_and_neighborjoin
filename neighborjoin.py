@@ -1,4 +1,4 @@
-from helpers import read_data, rm_clusters, merge_clusters
+from helpers import read_data, rm_clusters, merge_clusters, print_distance_matrix
 
 
 def neighbor_joining(otu_count, codes, dist_mat):
@@ -36,19 +36,31 @@ def neighbor_joining(otu_count, codes, dist_mat):
 
         # update Newick format for the merged cluster
         newick_f_dict[merge] = f"({newick_f_dict[cluster_i]}, {newick_f_dict[cluster_j]})"
-
-        # remove the merged clusters from clusters_dict and newick_f_dict
-        rm_clusters(clusters_dict, newick_f_dict, cluster_i, cluster_j)
-
         # update the list of clusters
+        rm_clusters(clusters_dict, newick_f_dict, cluster_i, cluster_j)
         clusters = list(clusters_dict.keys())
-        # decrement num of clusters
+
+        print_updated_dist_mat(clusters_dict, clusters)
         otu_count -= 1
 
     print("Distance btwn remaining clusters:")
     print(clusters_dict[clusters[0]][clusters[1]], clusters_dict[clusters[1]][clusters[0]])
     clusters= list(clusters_dict.keys())
     print_newick_f_dict(newick_f_dict, otu_count, clusters)
+
+def print_updated_dist_mat(clusters_dict, clusters):
+    print("Updated Distance Matrix:")
+    # Print the cluster names at the top of the matrix
+    print("\t" + "\t".join(clusters))
+    for i in range(len(clusters)):
+        # Print the cluster name at the side of the matrix
+        print(clusters[i], end="\t")
+        for j in range(len(clusters)):
+            if clusters[i] in clusters_dict and clusters[j] in clusters_dict[clusters[i]]:
+                print(f"{clusters_dict[clusters[i]][clusters[j]]:.2f}", end="\t")
+            else:
+                print("0", end="\t")
+        print()
 
 
 def init_newick_f(codes):
@@ -82,8 +94,8 @@ def print_newick_f_dict(newick_f_dict, otu_count, clusters):
 # prints out which clusters to merge and the distances
 def display_merge_info(cluster_i, cluster_j, branch_1, branch_2):
     print(f"\nMerge {cluster_i}, {cluster_j}")
-    print(f"Distance btwn {cluster_i} and ancestral node {branch_1}")
-    print(f"Distance btwn {cluster_j} and ancestral node {branch_2}")
+    print(f"Distance btwn {cluster_i} and ancestral node is {branch_1}")
+    print(f"Distance btwn {cluster_j} and ancestral node is {branch_2}")
 
 
 def calculate_transformed_distances(clusters_dict, max_dist, otu_count, clusters, r_values):
